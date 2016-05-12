@@ -1,0 +1,10 @@
+### IntelliJ Files template
+### Example user template
+
+# IntelliJ project files
+.idea
+.idea/*
+*.iml
+out
+gen
+# Created by .ignore support plugin (hsz.mobi)

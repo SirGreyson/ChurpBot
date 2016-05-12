@@ -47,11 +47,11 @@ stream.on('tweet', function (tweet) {
     else if (!args[1].startsWith("@")) {
         response = "Error! Invalid recipient formatting. IGNORE";
     }
-    else if (!args[2].startsWith("$")) {
-        response = "Error! Invalid amount formatting. IGNORE";
-    }
     else if (isNaN(+args[2].replace("$", ""))) {
-        response = "Are you trying to use Churp? If so, please make sure your dollar amount is in the right format ($15/$15.00)";
+        response = "Are you trying to use Churp? If so, please make sure your dollar amount is in the right format (IE. $15/$15.00)";
+    }
+    else if (!args[2].startsWith("$")) {
+        response = "Are you trying to use Churp? If so, please make sure your dollar amount is in the right format (IE. $15/$15.00)";
     } else {
         userExists(tweet.user.screen_name).then(function (success) {
             if (!success) {
@@ -62,16 +62,15 @@ stream.on('tweet', function (tweet) {
                     if (!success) {
                         response = "Sorry, we could not find a Churp account linked to that user name. If you think this is an error, please let us know";
                     } else {
-                        !hasBalance(tweet.user.screen_name, +args[2].replace("$", "")).then(function (success) {
-                            if (!success) {
+                        getBalance(tweet.user.screen_name).then(function (fBal) {
+                            if (fBal <= 0 || +args[2].replace("$", "") > fBal) {
                                 response = "Sorry, but you do not appear to have sufficient funds to send this Churp";
-                            }
-                            else {
-                                hasBalance(args[1].replace("@", ""), +args[2].replace("$", "")).then(function (success) {
-                                    if (!success) {
+                            } else {
+                                getBalance(args[1].replace("@", "")).then(function (tBal) {
+                                    if (tBal <= 0) {
                                         response = "Sorry, but it appears that recipient has not yet linked a payment account to their Churp account";
-                                    }
-                                    else {
+                                    } else {
+                                        doTransfer(tweet.user.screen_name, args[1].replace("@", ""), fBal, tBal, +args[2].replace("$", ""));
                                         response = "Success! Your Churp for " + args[2] + " has been sent to " + args[1];
                                     }
                                 })
@@ -97,16 +96,24 @@ stream.on('tweet', function (tweet) {
 
 });
 
-//Check to see if a specified username exists in the Firebase databse
+//Check to see if a specified username exists in the Firebase database
 function userExists(username) {
-    return users.once('value').then(function (success) {
-        return success.hasChild(username);
+    return users.once('value').then(function (snapshot) {
+        return snapshot.hasChild(username);
     });
 }
 
-//Check to see if a specific user has a specified balance
-function hasBalance(username, balance) {
-    return users.child(username).once('value').then(function (success) {
-        return success.hasChild('payment/balance') && success.child('payment/balance').val() >= balance;
-    });
+//Get the balance of a specified username from the Firebase database
+function getBalance(username) {
+    return users.child(username).once('value').then(function (snapshot) {
+        return snapshot.hasChild('payment/balance') ? snapshot.child('payment/balance').val() : -1;
+    })
+}
+
+//Transfer a specified amount of money from one Churp account to another
+function doTransfer(from, to, fBal, tBal, amount) {
+    console.log("From: " + from + " > " + fBal);
+    console.log("To: " + to + " > " + tBal);
+    users.child(from + '/payment').update({balance: (fBal - amount).toFixed(2)});
+    users.child(to + '/payment').update({balance: (tBal + amount).toFixed(2)});
 }
