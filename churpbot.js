@@ -77,9 +77,11 @@ stream.on('tweet', function (tweet) {
                                     if (tBal <= 0) {
                                         response = "Sorry, but it appears that recipient has not yet linked a payment account to their Churp account";
                                     } else {
+                                        //Get the specified campaign if the user has specified one
+                                        var campaign = args.length > 3 && args[3].startsWith("#") ? args[3].replace("#", "") : null;
                                         //If all of the above are false, send the Churp and transfer the money
-                                        doTransfer(tweet.user.screen_name, args[1].replace("@", ""), fBal, tBal, +args[2].replace("$", ""));
                                         response = "Success! Your Churp for " + args[2] + " has been sent to " + args[1];
+                                        doTransfer(tweet.user.screen_name, args[1].replace("@", ""), fBal, tBal, +args[2].replace("$", ""), null);
                                     }
                                 })
                             }
@@ -100,7 +102,9 @@ stream.on('tweet', function (tweet) {
                 status: "@" + tweet.user.screen_name + " " + response,
                 in_reply_to_status_id: tweet.id_str
             }, function (err, data, response) {
-                console.log(err);
+                if (err != null) {
+                    console.log(err);
+                }
             })
         }
     }, 5 * 1000);
@@ -121,10 +125,46 @@ function getBalance(username) {
     })
 }
 
+//Get a specified user's campaign with a given hashtag if it exists
+function getCampaign(username, hashtag) {
+    return users.child(username).once('value').then(function (snapshot) {
+        var output;
+        if (!snapshot.hasChild('campaigns')) {
+            output = null;
+        }
+        var campaigns = snapshot.child('campaigns');
+        campaigns.forEach(function (child) {
+            if (child.child('hashtag').val() == hashtag) {
+                output = child;
+            }
+        });
+        return output;
+    });
+}
+
+function getProfileImage(username) {
+    T.get('users/lookup', {screen_name: username}, function (err, data, response) {
+        return data[0].profile_image_url.substr(36);
+    })
+}
+
 //Transfer a specified amount of money from one Churp account to another
-function doTransfer(from, to, fBal, tBal, amount) {
-    console.log("From: " + from + " > " + fBal);
+function doTransfer(from, to, fBal, tBal, amount, campaign) {
+    console.log("From: " + from + " > " + fBal + " for " + campaign);
     console.log("To: " + to + " > " + tBal);
+    if (campaign != null) {
+        getCampaign(to, campaign).then(function (success) {
+            if (success != null) {
+                success.child('transactions').push({
+                    amount: amount,
+                    favorites: 0,
+                    picture: 'PLACE-HOLDER',
+                    retweets: 0,
+                    username: from
+                });
+            }
+        });
+    }
     users.child(from + '/payment').update({balance: (fBal - amount).toFixed(2)});
     users.child(to + '/payment').update({balance: (tBal + amount).toFixed(2)});
 }
