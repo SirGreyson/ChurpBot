@@ -13,10 +13,10 @@ var tweets = [];
 
 //Create a new instance of the Twit API using Twitter authorization keys
 var T = new Twit({
-    consumer_key: 'IFDq2K0W70QGp3mHzgzm6sGkh',
-    consumer_secret: 'tziiLdxQ4qsAhwD5cb8beFOvZOyUHugWfOHTCcQDMQng3KUb3E',
-    access_token: '730784674608517120-mDi6dicfsDZSzyyZp68EyJWGWXaehP7',
-    access_token_secret: 'Q7QzaFGIXOZWEe3NkBiptbXstafKFmppItZYizC92oHNX',
+    consumer_key: 'jPwTRyJNQtixYZk4BvtLs4x0m',
+    consumer_secret: 'ug5R83BByzrv3HOCvygDQ5k2wAUHaMX0QrtpYIpXdNX4wKuVx3',
+    access_token: '730784674608517120-BTtgQe9anSKj8ZgtVtJ4LP57uzSnyY5',
+    access_token_secret: 'iM1eafsmedqwpMecdXi0EkkDyrr9i5xrUewD7QIoo0qyJ',
     timeout_ms: 60 * 1000
 });
 
